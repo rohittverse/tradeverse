@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, signInWithPopup, signOut } from 'firebase/auth';
+import { User, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { auth, googleAuthProvider } from '../lib/firebase';
 
 interface AuthContextType {
@@ -17,11 +17,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle redirect result on page load
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect sign-in error:', error);
+    });
+
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setUser(user);
-      
       if (user) {
-        // Sync user to database
         try {
           const token = await user.getIdToken();
           await fetch('/api/users', {
@@ -32,10 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           });
         } catch (error) {
-          console.error("Failed to sync user", error);
+          console.error('Failed to sync user', error);
         }
       }
-      
       setLoading(false);
     });
 
@@ -43,7 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
-    await signInWithPopup(auth, googleAuthProvider);
+    try {
+      // Try popup first, fall back to redirect if blocked
+      await signInWithPopup(auth, googleAuthProvider);
+    } catch (error: any) {
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
+        await signInWithRedirect(auth, googleAuthProvider);
+      } else {
+        throw error;
+      }
+    }
   };
 
   const logout = async () => {

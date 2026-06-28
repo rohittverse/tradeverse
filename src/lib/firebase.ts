@@ -1,6 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import firebaseConfig from '../../firebase-applet-config.json';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCpVfzu2VSdgihKRg4rYa_eu1C6b6NyLI8",
+  authDomain: "tradeverse-9b398.firebaseapp.com",
+  projectId: "tradeverse-9b398",
+  storageBucket: "tradeverse-9b398.firebasestorage.app",
+  messagingSenderId: "957682988306",
+  appId: "1:957682988306:web:4daa37c3730c11c0cb2fcb"
+};
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
