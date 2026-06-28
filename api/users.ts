@@ -4,7 +4,7 @@ import { users } from '../src/db/schema.js';
 import { requireAuth } from '../src/middleware/auth.js';
 import { eq } from 'drizzle-orm';
 
-export default async function handler(req: IncomingMessage & { body?: any }, res: ServerResponse & { json?: any, status?: any }) {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const send = (code: number, data: any) => {
     res.writeHead(code, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));

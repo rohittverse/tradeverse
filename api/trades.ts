@@ -2,9 +2,10 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { db } from '../src/db/index.js';
 import { users, trades } from '../src/db/schema.js';
 import { requireAuth } from '../src/middleware/auth.js';
+import { parseBody } from './_helpers.js';
 import { eq, desc } from 'drizzle-orm';
 
-export default async function handler(req: IncomingMessage & { body?: any }, res: ServerResponse) {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const send = (code: number, data: any) => {
     res.writeHead(code, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
@@ -19,7 +20,11 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
 
   if (req.method === 'GET') {
     try {
-      const allTrades = await db.select().from(trades).where(eq(trades.userId, userId)).orderBy(desc(trades.tradeDate));
+      const allTrades = await db
+        .select()
+        .from(trades)
+        .where(eq(trades.userId, userId))
+        .orderBy(desc(trades.tradeDate));
       return send(200, allTrades);
     } catch (error) {
       console.error('Error fetching trades:', error);
@@ -29,7 +34,11 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
 
   if (req.method === 'POST') {
     try {
-      const newTrade = await db.insert(trades).values({ ...req.body, userId }).returning();
+      const body = await parseBody(req);
+      const newTrade = await db
+        .insert(trades)
+        .values({ ...body, userId })
+        .returning();
       return send(200, newTrade[0]);
     } catch (error) {
       console.error('Error creating trade:', error);

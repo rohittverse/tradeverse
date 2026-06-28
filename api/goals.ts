@@ -2,9 +2,10 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { db } from '../src/db/index.js';
 import { users, goals } from '../src/db/schema.js';
 import { requireAuth } from '../src/middleware/auth.js';
+import { parseBody } from './_helpers.js';
 import { eq } from 'drizzle-orm';
 
-export default async function handler(req: IncomingMessage & { body?: any }, res: ServerResponse) {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const send = (code: number, data: any) => {
     res.writeHead(code, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
@@ -19,7 +20,10 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
 
   if (req.method === 'GET') {
     try {
-      const userGoals = await db.select().from(goals).where(eq(goals.userId, userId));
+      const userGoals = await db
+        .select()
+        .from(goals)
+        .where(eq(goals.userId, userId));
       return send(200, userGoals);
     } catch (error) {
       console.error('Error fetching goals:', error);
@@ -29,7 +33,11 @@ export default async function handler(req: IncomingMessage & { body?: any }, res
 
   if (req.method === 'POST') {
     try {
-      const newGoal = await db.insert(goals).values({ ...req.body, userId }).returning();
+      const body = await parseBody(req);
+      const newGoal = await db
+        .insert(goals)
+        .values({ ...body, userId })
+        .returning();
       return send(200, newGoal[0]);
     } catch (error) {
       console.error('Error creating goal:', error);
